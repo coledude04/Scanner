@@ -33,8 +33,6 @@ class Results:
         self.indus3 = tk.Label(self.grid, text = "Industry 3", font = ('Arial', '14'))
         self.indus3.grid(row = 2, column = 1, pady = 1, padx = 1)
 
-        self.grid.rowconfigure(1, )
-
         self.grid.pack()
 
 class StartGUI:
