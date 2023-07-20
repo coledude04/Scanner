@@ -55,7 +55,7 @@ class Results:
         self.indusName.grid(row = 0, column = 1, pady = 1, padx = 1)
 
         global options
-        options = ["Price", "Change", "% Change", "PE Ratio", "Volume", "Other"]
+        options = ["Price", "Change", "% Change", "PE Ratio", "EPS", "Volume", "% Insider", "% Institution", "Other"]
         self.option = ttk.Combobox(self.canvas2, values = options, width = 9, font = ('Arial', '14'))
         self.option.grid(row = 0, column = 2, padx = 1, pady = 1)
 
@@ -89,6 +89,12 @@ class Results:
         self.canvas1.grid(row=0, column=0, sticky="nsew", padx = 1, pady = 1)
         self.scroll.grid(row=0, column=99, sticky="ns")
 
+        #makes scrolling smoother and starts the window at the top upon opening
+        self.canvas1.update_idletasks()
+        self.canvas1.yview_moveto(0.0)
+        self.canvas2.yview_moveto(0)
+
+
         #sets results_open variable to false on closing
         self.root.protocol("WM_DELETE_WINDOW", self.exitWindow)
 
@@ -117,13 +123,15 @@ class Results:
             x = 1
             #when the user picks other
             if self.option.get() == "Other":
+                self.option.delete(0, 'end')
                 #asks the user for their desired stat
                 value = simpledialog.askstring("New Value", "What value do you want displayed? (Must be part of yfinance library)")
-                if yf.Ticker('AAPL').info.get(value) != yf.Ticker('AAPL').info.get('g'):
+                if value is not None:
+                    try:
                         for i in finalStocks:
                             stock = yf.Ticker(i)
                             #adding labels for new stats
-                            self.label3 = tk.Label(self.canvas2, text = stock.info.get(value), font = ('Arial', '14'), width = 11)
+                            self.label3 = tk.Label(self.canvas2, text = stock.info[value], font = ('Arial', '14'), width = 11)
                             self.label3.grid(row = x, column = y, pady = 1, padx = 1)
                             self.label3.bind("<MouseWheel>", self.scrollbar)
                             x += 1
@@ -134,14 +142,19 @@ class Results:
                         self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
                         self.newLabel = tk.Label(self.canvas2, text = value.upper(), font = ('Arial', '14'), width = 11)
                         self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
+                        y += 1
+                    except:
+                        messagebox.showerror(title = "Error", message = f"{value} is not an option. Check spelling and capitalization and try again.")
             #when the user picks price
             elif self.option.get() == "Price":
+                self.newLabel = tk.Label(self.canvas2, text = "Price", font = ('Arial', '14'), width = 11)
+                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 for i in finalStocks:
                     stock = yf.Ticker(i)
                     #this finds the middle between the bid and ask to determine an accurate price
                     #adding new labels
                     try:
-                        self.label3 = tk.Label(self.canvas2, text = round(stock.info.get('bid') + stock.info.get('ask'), 2) / 2, font = ('Arial', '14'), width = 11)
+                        self.label3 = tk.Label(self.canvas2, text = stock.info['currentPrice'], font = ('Arial', '14'), width = 11)
                     except:
                         self.label3 = tk.Label(self.canvas2, text = "N/A", font = ('Arial', 14), width = 11)
                     self.label3.grid(row = x, column = y, pady = 1, padx = 1)
@@ -151,25 +164,26 @@ class Results:
                     self.root.update()
                     self.root.after(50)
                 #moving new things to next column
+                self.option.delete(0, 'end')
                 self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
-                self.newLabel = tk.Label(self.canvas2, text = "Price", font = ('Arial', '14'), width = 11)
-                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 y += 1
                 #taking price out of the drop down menu
                 try:
                     options.pop(options.index("Price"))
                     self.option['values'] = options
                 except:
-                    messagebox.askokcancel(title = "Recurring Value", message = "Price is already on the screen. It will be added again.")
+                    messagebox.showerror(title = "Recurring Value", message = "Price is already on the screen. It will be added again.")
             #when the user picks change
             elif self.option.get() == "Change":
+                self.newLabel = tk.Label(self.canvas2, text = "Change", font = ('Arial', '14'), width = 11)
+                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 for i in finalStocks:
                     stock = yf.Ticker(i)
                     #subtracting the open from the price
-                    open = stock.info.get('open')
+                    open = stock.info.get('previousClose')
                     try:
-                        price = (stock.info.get('bid') + stock.info.get('ask')) / 2
-                        change2 = round((open - price), 2)
+                        price = stock.info['currentPrice']
+                        change2 = round((price - open), 2)
                         #determining the color of the text based on if the stock is up or down
                         if change2 > 0:
                             color = "green"
@@ -193,25 +207,26 @@ class Results:
                     self.root.after(50)
 
                 #moving new things to the next column
+                self.option.delete(0, 'end')
                 self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
-                self.newLabel = tk.Label(self.canvas2, text = "Change", font = ('Arial', '14'), width = 11)
-                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 y += 1
                 #taking change out of the drop down menu
                 try:
                     options.pop(options.index("Change"))
                     self.option['values'] = options
                 except:
-                    messagebox.askokcancel(title = "Recurring Value", message = "Change is already on the screen. It will be added again.")
+                    messagebox.showerror(title = "Recurring Value", message = "Change is already on the screen. It will be added again.")
             #when the user picks %change
             elif self.option.get() == "% Change":
+                self.newLabel = tk.Label(self.canvas2, text = "% Change", font = ('Arial', '14'), width = 11)
+                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 for i in finalStocks:
                     stock = yf.Ticker(i)
                     #finding the percentage of change so far for the day
-                    open = stock.info.get('open')
+                    open = stock.info.get('previousClose')
                     try:
-                        price = (stock.info.get('bid') + stock.info.get('ask')) / 2
-                        change = round((open - price) / price, 2)
+                        price = stock.info['currentPrice']
+                        change = round(((price - open) / open)*100, 2)
                         #determining the color of the text based on if the stock is up or down
                         if change > 0:
                             color = "green"
@@ -234,23 +249,24 @@ class Results:
                     self.root.update()
                     self.root.after(50)
                 #moving new things to the next column
+                self.option.delete(0, 'end')
                 self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
-                self.newLabel = tk.Label(self.canvas2, text = "% Change", font = ('Arial', '14'), width = 11)
-                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 y += 1
                 #removing % change from the drop down menu
                 try:
                     options.pop(options.index("% Change"))
                     self.option['values'] = options
                 except:
-                    messagebox.askokcancel(title = "Recurring Value", message = "% Change is already on the screen. It will be added again.")
+                    messagebox.showerror(title = "Recurring Value", message = "% Change is already on the screen. It will be added again.")
             #when the user picks PE Ratio
             elif self.option.get() == "PE Ratio":
+                self.newLabel = tk.Label(self.canvas2, text = "PE Ratio", font = ('Arial', '14'), width = 11)
+                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 for i in finalStocks:
                     stock = yf.Ticker(i)
                     #adding new labels
                     try:
-                        self.label3 = tk.Label(self.canvas2, text = round(stock.info.get('forwardPE'), 2), font = ('Arial', '14'), width = 11)
+                        self.label3 = tk.Label(self.canvas2, text = round(stock.info['forwardPE'], 2), font = ('Arial', '14'), width = 11)
                     except:
                         self.label3 = tk.Label(self.canvas2, text = "N/A", font = ('Arial', 14), width = 11)
                     self.label3.grid(row = x, column = y, pady = 1, padx = 1)
@@ -260,23 +276,50 @@ class Results:
                     self.root.update()
                     self.root.after(50)
                 #moving new things to the next column
+                self.option.delete(0, 'end')
                 self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
-                self.newLabel = tk.Label(self.canvas2, text = "PE Ratio", font = ('Arial', '14'), width = 11)
-                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 y += 1
                 #removing PE Ratio from the drop down menu
                 try:
                     options.pop(options.index("PE Ratio"))
                     self.option['values'] = options
                 except:
-                    messagebox.askokcancel(title = "Recurring Value", message = "PE Ratio is already on the screen. It will be added again.")
-            #when the user selects volume
-            elif self.option.get() == "Volume":
+                    messagebox.showerror(title = "Recurring Value", message = "PE Ratio is already on the screen. It will be added again.")
+            elif self.option.get() == "EPS":
+                self.newLabel = tk.Label(self.canvas2, text = "EPS", font = ('Arial', '14'), width = 11)
+                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 for i in finalStocks:
                     stock = yf.Ticker(i)
                     #adding new labels
                     try:
-                        self.label3 = tk.Label(self.canvas2, text = round(stock.info.get('volume'), 2), font = ('Arial', '14'), width = 11)
+                        self.label3 = tk.Label(self.canvas2, text = round(stock.info['forwardEps'], 3), font = ('Arial', '14'), width = 11)
+                    except:
+                        self.label3 = tk.Label(self.canvas2, text = "N/A", font = ('Arial', 14), width = 11)
+                    self.label3.grid(row = x, column = y, pady = 1, padx = 1)
+                    self.label3.bind("<MouseWheel>", self.scrollbar)
+                    x += 1
+                    #adding a delay so that the window doesn't freeze
+                    self.root.update()
+                    self.root.after(50)
+                #moving new things to the next column
+                self.option.delete(0, 'end')
+                self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
+                y += 1
+                #removing PE Ratio from the drop down menu
+                try:
+                    options.pop(options.index("EPS"))
+                    self.option['values'] = options
+                except:
+                    messagebox.showerror(title = "Recurring Value", message = "EPS is already on the screen. It will be added again.")
+            #when the user selects volume
+            elif self.option.get() == "Volume":
+                self.newLabel = tk.Label(self.canvas2, text = "Volume", font = ('Arial', '14'), width = 11)
+                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
+                for i in finalStocks:
+                    stock = yf.Ticker(i)
+                    #adding new labels
+                    try:
+                        self.label3 = tk.Label(self.canvas2, text = round(stock.info['volume'], 2), font = ('Arial', '14'), width = 11)
                     except:
                         self.label3 = tk.Label(self.canvas2, text = "N/A", font = ('Arial', 14), width = 11)
                     self.label3.grid(row = x, column = y, pady = 1, padx = 1)
@@ -286,19 +329,71 @@ class Results:
                     self.root.update()
                     self.root.after(50)
                 #moving new things over
+                self.option.delete(0, 'end')
                 self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
-                self.newLabel = tk.Label(self.canvas2, text = "Volume", font = ('Arial', '14'), width = 11)
-                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
                 y += 1
                 #removing volume from the drop down menu
                 try:
                     options.pop(options.index("Volume"))
                     self.option['values'] = options
                 except:
-                    messagebox.askokcancel(title = "Recurring Value", message = "Volume is already on the screen. It will be added again.")
+                    messagebox.showerror(title = "Recurring Value", message = "Volume is already on the screen. It will be added again.")
+            elif self.option.get() == "% Insider":
+                self.newLabel = tk.Label(self.canvas2, text = "% Insider", font = ('Arial', '14'), width = 11)
+                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
+                for i in finalStocks:
+                    stock = yf.Ticker(i)
+                    #adding new labels
+                    try:
+                        self.label3 = tk.Label(self.canvas2, text = round(stock.info['heldPercentInsiders'], 3), font = ('Arial', '14'), width = 11)
+                    except:
+                        self.label3 = tk.Label(self.canvas2, text = "N/A", font = ('Arial', 14), width = 11)
+                    self.label3.grid(row = x, column = y, pady = 1, padx = 1)
+                    self.label3.bind("<MouseWheel>", self.scrollbar)
+                    x += 1
+                    #adding a delay so that the window doesn't freeze
+                    self.root.update()
+                    self.root.after(50)
+                #moving new things over
+                self.option.delete(0, 'end')
+                self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
+                y += 1
+                #removing volume from the drop down menu
+                try:
+                    options.pop(options.index("% Insider"))
+                    self.option['values'] = options
+                except:
+                    messagebox.showerror(title = "Recurring Value", message = "% Insider is already on the screen. It will be added again.")
+            elif self.option.get() == "% Institution":
+                self.newLabel = tk.Label(self.canvas2, text = "% Institution", font = ('Arial', '14'), width = 11)
+                self.newLabel.grid(row = 0, column = y, padx = 1, pady = 1)
+                for i in finalStocks:
+                    stock = yf.Ticker(i)
+                    #adding new labels
+                    try:
+                        self.label3 = tk.Label(self.canvas2, text = round(stock.info['heldPercentInstitutions'], 3), font = ('Arial', '14'), width = 11)
+                    except:
+                        self.label3 = tk.Label(self.canvas2, text = "N/A", font = ('Arial', 14), width = 11)
+                    self.label3.grid(row = x, column = y, pady = 1, padx = 1)
+                    self.label3.bind("<MouseWheel>", self.scrollbar)
+                    x += 1
+                    #adding a delay so that the window doesn't freeze
+                    self.root.update()
+                    self.root.after(50)
+                #moving new things over
+                self.option.delete(0, 'end')
+                self.option.grid(row = 0, column = y+1, padx = 1, pady = 1)
+                y += 1
+                #removing volume from the drop down menu
+                try:
+                    options.pop(options.index("% Institution"))
+                    self.option['values'] = options
+                except:
+                    messagebox.showerror(title = "Recurring Value", message = "% Institution is already on the screen. It will be added again.")
             #when the user enters something unavailable in the drop down menu
             else:
-                messagebox.askokcancel(title = "Error", message = f'{self.option.get()} is not an option. Try using "Other"')
+                if self.option.get() != "":
+                    messagebox.showerror(title = "Error", message = f'{self.option.get()} is not an option. Try using "Other"')
 
 class StartGUI:
 
