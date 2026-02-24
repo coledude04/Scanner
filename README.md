@@ -1,3 +1,3 @@
 ﻿# Scanner
 
-A GUI application that allows users to filter stocks based on various financial metrics and visualize the results.
+A program that compares a stock\'s historical PE ratio to its current PE ratio to infer if it\'s under or overvalued.
